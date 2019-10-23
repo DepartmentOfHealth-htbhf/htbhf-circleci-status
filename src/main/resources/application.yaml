@@ -1,0 +1,5 @@
+circleci:
+    base-url: https://circleci.com/api/v1.1/project/gh
+    organisation: ${ORGANISATION_NAME:DepartmentOfHealth-htbhf}
+    token: ${CIRCLECI_TOKEN}
+    branch: ${REPOSITORY_BRANCH:master}

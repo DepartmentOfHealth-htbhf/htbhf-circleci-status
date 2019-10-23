@@ -1,0 +1,11 @@
+---
+applications:
+- name: htbhf-circleci-status
+  buildpacks:
+  - java_buildpack
+  path: build/libs/htbhf-circleci-status.jar
+  memory: 256m
+  env:
+    CIRCLECI_TOKEN: ((circleci-token))
+    JAVA_OPTS: '-XX:ReservedCodeCacheSize=32M -XX:MaxDirectMemorySize=32M'
+    JBP_CONFIG_OPEN_JDK_JRE: '[memory_calculator: {stack_threads: 30}, jre: {version: 11.+}]'
