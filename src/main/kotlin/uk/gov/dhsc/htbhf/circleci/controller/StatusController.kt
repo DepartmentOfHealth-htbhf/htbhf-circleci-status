@@ -2,11 +2,10 @@ package uk.gov.dhsc.htbhf.circleci.controller
 
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.client.RestTemplate
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpMethod
+import org.springframework.http.*
 import uk.gov.dhsc.htbhf.circleci.model.CircleCIBuild
 import uk.gov.dhsc.htbhf.circleci.model.SimpleStatus
 
@@ -27,15 +26,14 @@ class StatusController(private val restTemplate: RestTemplate, private val logge
     @Value("\${circleci.token}")
     private val apiToken: String? = null
 
-    private val successPng = readImageFile("success")
-    private val successRunningPng = readImageFile("success-running")
-    private val failedPng = readImageFile("failed")
-    private val failedRunningPng = readImageFile("failed-running")
-    private val unknownPng = readImageFile("unknown")
+    private val successResponse = getResponse("success")
+    private val successRunningResponse = getResponse("success-running")
+    private val failedResponse = getResponse("failed")
+    private val failedRunningResponse = getResponse("failed-running")
+    private val unknownResponse = getResponse("unknown")
 
     @GetMapping(value = ["/{project}"], produces = [MediaType.IMAGE_PNG_VALUE])
-    @ResponseBody
-    fun getStatus(@PathVariable("project") project: String): ByteArray {
+    fun getStatus(@PathVariable("project") project: String): ResponseEntity<ByteArray> {
         val builds = getCircleCIBuildHistory(project)
 
         val running = builds.any(CircleCIBuild::stillRunning)
@@ -53,14 +51,21 @@ class StatusController(private val restTemplate: RestTemplate, private val logge
         return response.body ?: emptyList()
     }
 
-    private fun getStatusImage(running: Boolean, status: SimpleStatus): ByteArray {
+    private fun getStatusImage(running: Boolean, status: SimpleStatus): ResponseEntity<ByteArray> {
         if (status == SimpleStatus.SUCCESS) {
-            return if (running) successRunningPng else successPng
+            return if (running) successRunningResponse else successResponse
         }
         if (status == SimpleStatus.FAILURE) {
-            return if (running) failedRunningPng else failedPng
+            return if (running) failedRunningResponse else failedResponse
         }
-        return unknownPng
+        return unknownResponse
+    }
+
+    private fun getResponse(name: String): ResponseEntity<ByteArray> {
+        val imageFile = readImageFile(name)
+        val headers = HttpHeaders()
+        headers.cacheControl = "no-cache"
+        return ResponseEntity(imageFile, headers, HttpStatus.OK)
     }
 
     private fun readImageFile(name: String) = StatusController::class.java.getResourceAsStream("/images/${name}.png").use { it.readBytes() }
